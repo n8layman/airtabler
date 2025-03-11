@@ -100,13 +100,13 @@ air_get <- function(base, table_name,
                     filterByFormula = NULL,
                     combined_result = TRUE) {
 
-  search_path <- table_name
+    # Encode the table_name to handle special characters
+  search_path <- utils::URLencode(table_name, reserved = TRUE)
 
   if(!missing(record_id)) {
     search_path <- paste0(search_path, "/", record_id)
   }
   request_url <- sprintf("%s/%s/%s?", air_url, base, search_path)
-  request_url <- utils::URLencode(request_url)
 
   # append parameters to URL:
   param_list <- as.list(environment())[c(
