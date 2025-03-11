@@ -920,7 +920,7 @@ air_dump <- function(base, metadata= NULL, description = NULL,
     #get schema
     base_schema <- air_get_schema(base)
     # look for meta data table
-    table_names <- utils::base_schema$tables$name
+    table_names <- base_schema$tables$name
 
     metadata_check <- grepl("meta data",table_names,ignore.case = TRUE)
 
