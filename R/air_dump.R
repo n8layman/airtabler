@@ -65,7 +65,7 @@ set_diff <- function(x,y){
 #'}
 #'
 #'
-air_create_metadata_table <- function(base,meta_data,table_name = "Meta Data",  field_descriptions = NA,
+air_create_metadata_table <- function(base,meta_data, table_name = "Meta Data",  field_descriptions = NA,
                                       type = "singleLineText", options = NA){
 
   # check for meta data table
@@ -920,7 +920,7 @@ air_dump <- function(base, metadata= NULL, description = NULL,
     #get schema
     base_schema <- air_get_schema(base)
     # look for meta data table
-    table_names <- base_schema$tables$name
+    table_names <- utils::base_schema$tables$name
 
     metadata_check <- grepl("meta data",table_names,ignore.case = TRUE)
 
@@ -1240,7 +1240,7 @@ air_dump_to_csv <- function(table_list,output_dir= "outputs",
 
     output_file_path  <- sprintf("%s/%s.csv",output_dir_path,y_table_name)
 
-    utils::write.csv(x_table_flat,output_file_path,row.names = FALSE)
+    write.csv(x_table_flat,output_file_path,row.names = FALSE)
   })
 
   ## copy from temp to final

@@ -35,7 +35,7 @@ air_get_json <- function(base, table_name,
                          combined_result = TRUE,
                          pretty = FALSE) {
 
-  search_path <- table_name
+  search_path <-  utils::URLencode(table_name)
 
   if(!missing(record_id)) {
     search_path <- paste0(search_path, "/", record_id)
