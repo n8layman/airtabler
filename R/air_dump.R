@@ -1182,80 +1182,138 @@ flatten_col_to_chr <- function(data_frame){
 #'
 #' @return Vector of file paths
 #' @export
-air_dump_to_csv <- function(table_list,output_dir= "outputs",
-                            attachments_dir=NULL,
+air_dump_to_csv <- function(table_list, output_dir = "outputs",
+                            attachments_dir = NULL,
                             overwrite = FALSE,
                             output_id = NULL,
-                            names_to_snake_case = TRUE){
-
+                            names_to_snake_case = TRUE) {
+  
   # create a unique id for the data
-  if(is.null(output_id)){
+  if (is.null(output_id)) {
     output_id <- rlang::hash(table_list)
   }
-
-
+  
   # check if data already exist
-  output_dir_path_final  <- sprintf("%s/%s",output_dir,output_id)
-  if(dir.exists(output_dir_path_final) & !overwrite){
-    message("data already exist, files not written. Set overwrite
-            to TRUE ")
-    return(list.files(output_dir_path_final,full.names = TRUE))
+  output_dir_path_final <- sprintf("%s/%s", output_dir, output_id)
+  if (dir.exists(output_dir_path_final) & !overwrite) {
+    message("Data already exists, files not written. Set overwrite to TRUE")
+    return(list.files(output_dir_path_final, full.names = TRUE))
   }
-
+  
   # create temp dir
   temp_path <- tempdir()
-  output_dir_path <- sprintf("%s/%s",temp_path,output_id)
-
-  ### consider using temp dir then copying once finished processing
-
-  dir.create(output_dir_path,recursive = TRUE)
-
-  purrr::walk2(table_list, names(table_list), function(x_table,y_table_name){
-
-    if(names_to_snake_case){
+  output_dir_path <- sprintf("%s/%s", temp_path, output_id)
+  
+  # Create temp directory if it doesn't exist
+  if (!dir.exists(output_dir_path)) {
+    dir.create(output_dir_path, recursive = TRUE)
+  }
+  
+  if (!dir.exists(output_dir_path)) {
+    stop(glue::glue("Failed to create temporary directory: {output_dir_path}"))
+  }
+  
+  # Process each table
+  file_paths <- purrr::map2_chr(table_list, names(table_list), function(x_table, y_table_name) {
+    
+    if (names_to_snake_case) {
       ##  clean table name
       y_table_name_snake <- snakecase::to_snake_case(y_table_name)
       ## clean up field names in table
-      x_names_snake  <- snakecase::to_snake_case(names(x_table))
-
+      x_names_snake <- snakecase::to_snake_case(names(x_table))
+      
       ## check that we didn't create duplicate field names
-      dup_check <- duplicated(names(x_table))
-
-      if(any(dup_check)){
-       err_msg <- glue::glue("The following field names in table {y_table_name} are duplicated after converting to snake_case:
+      dup_check <- duplicated(x_names_snake)
+      
+      if (any(dup_check)) {
+        err_msg <- glue::glue("The following field names in table {y_table_name} are duplicated after converting to snake_case:
                              \n
-                             {names(x_table)[dup_check]}\n
+                             {paste(names(x_table)[which(dup_check)], collapse = ', ')}\n
                              Fix field names in airtable or set `names_to_snake_case` to FALSE")
-       rlang::abort(err_msg)
+        rlang::abort(err_msg)
       }
-
+      
       y_table_name <- y_table_name_snake
-
       names(x_table) <- x_names_snake
-
     }
+    
+    # Sanitize table name further by replacing problematic characters
+    y_table_name_sanitized <- gsub("[/ ]", "_", y_table_name)
+    
     x_table_flat <- flatten_col_to_chr(x_table)
-
+    
     ## export to CSV
-
-    output_file_path  <- sprintf("%s/%s.csv",output_dir_path,y_table_name)
-
-    write.csv(x_table_flat,output_file_path,row.names = FALSE)
+    output_file_path <- sprintf("%s/%s.csv", output_dir_path, y_table_name_sanitized)
+    
+    # Create parent directory if needed
+    parent_dir <- dirname(output_file_path)
+    if (!dir.exists(parent_dir)) {
+      dir.create(parent_dir, recursive = TRUE)
+    }
+    
+    tryCatch({
+      write.csv(x_table_flat, output_file_path, row.names = FALSE)
+      message(glue::glue("Successfully created temporary file for {y_table_name_sanitized}"))
+    }, error = function(e) {
+      warning(glue::glue("Failed to write {y_table_name_sanitized} to temporary file: {e$message}"))
+    })
+    
+    return(output_file_path)
   })
-
-  ## copy from temp to final
-  dir.create(output_dir_path_final,recursive = TRUE)
-  outputs_list <- list.files(output_dir_path,full.names = T)
-
-  file.copy(from = outputs_list,to = output_dir_path_final,recursive = FALSE ,copy.mode = TRUE)
-
-  ## copy attachments into folder
-  if(!is.null(attachments_dir)){
-    message("copying attachments")
-    file.copy(from = attachments_dir, to = output_dir_path_final,recursive = TRUE ,copy.mode = TRUE )
+  
+  ## Create final output directory
+  if (!dir.exists(output_dir_path_final)) {
+    dir.create(output_dir_path_final, recursive = TRUE)
+    
+    if (!dir.exists(output_dir_path_final)) {
+      stop(glue::glue("Failed to create output directory: {output_dir_path_final}"))
+    }
   }
-  return(list.files(output_dir_path_final,full.names = TRUE))
-
+  
+  ## Copy from temp to final
+  outputs_list <- list.files(output_dir_path, full.names = TRUE)
+  
+  # Copy files and handle errors
+  copied_files <- sapply(outputs_list, function(src_file) {
+    dest_file <- file.path(output_dir_path_final, basename(src_file))
+    
+    if (file.exists(dest_file) && !overwrite) {
+      message(glue::glue("File {dest_file} already exists and overwrite=FALSE. Skipping."))
+      return(dest_file)
+    }
+    
+    copy_result <- tryCatch({
+      file.copy(from = src_file, to = dest_file, overwrite = overwrite)
+      message(glue::glue("Successfully copied {basename(src_file)} to final location"))
+      dest_file
+    }, error = function(e) {
+      warning(glue::glue("Failed to copy {basename(src_file)}: {e$message}"))
+      NA
+    })
+    
+    return(copy_result)
+  })
+  
+  ## Copy attachments into folder if specified
+  if (!is.null(attachments_dir)) {
+    if (!dir.exists(attachments_dir)) {
+      warning(glue::glue("Attachments directory {attachments_dir} does not exist. Skipping attachment copy."))
+    } else {
+      message("Copying attachments")
+      attachments_dest <- file.path(output_dir_path_final, basename(attachments_dir))
+      
+      tryCatch({
+        file.copy(from = attachments_dir, to = output_dir_path_final, recursive = TRUE, copy.mode = TRUE)
+        message(glue::glue("Successfully copied attachments to {attachments_dest}"))
+      }, error = function(e) {
+        warning(glue::glue("Failed to copy attachments: {e$message}"))
+      })
+    }
+  }
+  
+  # Return list of all files in the final directory
+  final_files <- list.files(output_dir_path_final, full.names = TRUE)
+  return(final_files)
 }
 
 
@@ -1277,73 +1335,92 @@ air_dump_to_csv <- function(table_list,output_dir= "outputs",
 #' description and metadata tables.
 #' @export air_dump_to_json
 #'
-air_dump_to_json <- function(base, metadata, description = NULL, output_dir= "outputs", overwrite = FALSE){
-
+air_dump_to_json <- function(base, metadata, description = NULL, output_dir = "outputs", overwrite = FALSE) {
+  
   names(metadata) <- snakecase::to_snake_case(names(metadata))
-
+  
   ## check for required fields
   required_fields <- c("table_name")
-
-  if(!all(required_fields %in% names(metadata))){
+  
+  if (!all(required_fields %in% names(metadata))) {
     stop(glue::glue("metadata table must contain the
                     following field: {required_fields}. Note
                     that field names are converted to snakecase
                     before check."))
   }
-
-
+  
   base_table_names <- unique(metadata$table_name)
-
+  
   print(base_table_names)
-
+  
   json_list <- base_table_names |>
     purrr::set_names() |>
-    purrr::map(function(x){
-
+    purrr::map(function(x) {
       ### no expected fields, just json
       ### see air_make_json for refactor
-
-      x_json <- fetch_all_json(base,x)
-
+      x_json <- fetch_all_json(base, x)
       return(x_json)
-
     })
-
+  
   json_list$metadata <- jsonlite::toJSON(metadata)
-
+  
   # check for description table
-  named_description <- grepl(pattern = "description",x = names(json_list), ignore.case = TRUE)
-
-  if(!is.null(description)){
-    if(any(named_description)){
+  named_description <- grepl(pattern = "description", x = names(json_list), ignore.case = TRUE)
+  
+  if (!is.null(description)) {
+    if (any(named_description)) {
       warning("Base has a description table and a description data.frame was supplied to
               this function. Inserting description data.frame at $description. Table
               extract may be overwritten.")
     }
     json_list$description <- jsonlite::toJSON(description)
   }
-
+  
   ## does not add a description table if not present
-
-
+  
   ## write to files
   output_id <- rlang::hash(json_list)
-
-  output_dir_path <- sprintf("%s/%s",output_dir,output_id)
-
-  dir.create(output_dir_path,recursive = TRUE)
-
-  purrr::walk2(json_list, names(json_list), function(x_table,y_table_name){
-
-    output_file_path  <- sprintf("%s/%s.json",output_dir_path,y_table_name)
-
-    jsonlite::write_json(x_table,path = output_file_path)
+  
+  output_dir_path <- sprintf("%s/%s", output_dir, output_id)
+  
+  # Create directory if it doesn't exist
+  if (!dir.exists(output_dir_path)) {
+    dir.create(output_dir_path, recursive = TRUE)
+  }
+  
+  if (!dir.exists(output_dir_path)) {
+    stop(glue::glue("Failed to create directory: {output_dir_path}"))
+  }
+  
+  file_paths <- purrr::map2_chr(json_list, names(json_list), function(x_table, y_table_name) {
+    # Sanitize table names by replacing problematic characters
+    sanitized_table_name <- gsub("[/ ]", "_", y_table_name)
+    
+    output_file_path <- sprintf("%s/%s.json", output_dir_path, sanitized_table_name)
+    
+    # Check if file exists and respect overwrite parameter
+    if (file.exists(output_file_path) && !overwrite) {
+      message(glue::glue("File {output_file_path} already exists and overwrite=FALSE. Skipping."))
+      return(output_file_path)
+    }
+    
+    # Create parent directories if they don't exist
+    parent_dir <- dirname(output_file_path)
+    if (!dir.exists(parent_dir)) {
+      dir.create(parent_dir, recursive = TRUE)
+    }
+    
+    tryCatch({
+      jsonlite::write_json(x_table, path = output_file_path)
+      message(glue::glue("Successfully wrote {sanitized_table_name} to {output_file_path}"))
+    }, error = function(e) {
+      warning(glue::glue("Failed to write {sanitized_table_name} to {output_file_path}: {e$message}"))
+    })
+    
+    return(output_file_path)
   })
-
-  return(list.files(output_dir_path,full.names = TRUE))
-
-
-
+  
+  return(file_paths)
 }
 
 
