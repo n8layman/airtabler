@@ -1195,7 +1195,7 @@ air_dump_to_csv <- function(table_list, output_dir = "outputs",
   
   # check if data already exist
   output_dir_path_final <- sprintf("%s/%s", output_dir, output_id)
-  if (dir.exists(output_dir_path_final) && !overwrite) {
+  if (all(dir.exists(output_dir_path_final)) && !overwrite) {
     message("Data already exists, files not written. Set overwrite to TRUE")
     return(list.files(output_dir_path_final, full.names = TRUE))
   }
