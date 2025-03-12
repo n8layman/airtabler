@@ -983,7 +983,7 @@ air_dump <- function(base, metadata= NULL, description = NULL,
         obs_exp  <- setdiff(fields_obs,fields_exp)
         ignore_fields <- c("id","createdTime","created_time")
         ignore_fields_pattern <- paste(ignore_fields,collapse = "|")
-        if(length(obs_exp) != 0 & !all(obs_exp %in% ignore_fields)){
+        if(length(obs_exp) != 0 && !all(obs_exp %in% ignore_fields)){
           missing_fields <- obs_exp[!grepl(ignore_fields_pattern,obs_exp,ignore.case = FALSE)]
           missing_fields_glue <- paste(missing_fields, collapse = "\n")
           stop(glue::glue('The metadata table is missing the following fields from table {x}:
@@ -1004,7 +1004,7 @@ air_dump <- function(base, metadata= NULL, description = NULL,
 
       if(download_attachments){
 
-        if(rlang::is_empty(attachment_fields) & !"field_type"%in% names(metadata)){
+        if(rlang::is_empty(attachment_fields) && !"field_type"%in% names(metadata)){
           rlang::abort("Unclear which fields contain attachments.
                        Either use the attachment_fields argument or
                        supply a metadata dataframe with field_types == 'multipleAttachments' for
@@ -1195,7 +1195,7 @@ air_dump_to_csv <- function(table_list, output_dir = "outputs",
   
   # check if data already exist
   output_dir_path_final <- sprintf("%s/%s", output_dir, output_id)
-  if (dir.exists(output_dir_path_final) & !overwrite) {
+  if (dir.exists(output_dir_path_final) && !overwrite) {
     message("Data already exists, files not written. Set overwrite to TRUE")
     return(list.files(output_dir_path_final, full.names = TRUE))
   }
