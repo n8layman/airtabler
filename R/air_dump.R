@@ -1262,10 +1262,10 @@ air_dump_to_csv <- function(table_list, output_dir = "outputs",
   })
   
   ## Create final output directory
-  if (!dir.exists(output_dir_path_final)) {
+  if (!all(dir.exists(output_dir_path_final))) {
     dir.create(output_dir_path_final, recursive = TRUE)
     
-    if (!dir.exists(output_dir_path_final)) {
+    if (!all(dir.exists(output_dir_path_final))) {
       stop(glue::glue("Failed to create output directory: {output_dir_path_final}"))
     }
   }
