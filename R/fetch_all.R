@@ -1,7 +1,8 @@
-fetch_all <- function(base, table_name, ...) {
+fetch_all <- function(base, table_name, separator = "|||", ...) {
   out <- list()
-  out[[1]] <- airtabler::air_get(base, table_name, combined_result = FALSE,...)
-  if(length(out[[1]]) == 0){
+  out[[1]] <- airtabler::air_get(base, table_name, combined_result = FALSE, ...)
+  
+  if(length(out[[1]]) == 0) {
     emptyTableMessage <- glue::glue("The queried view for {table_name} in {base} is empty")
     warning(emptyTableMessage)
     return(emptyTableMessage)
@@ -12,29 +13,29 @@ fetch_all <- function(base, table_name, ...) {
       offset <- airtabler::get_offset(out[[length(out)]])
     }
     
-    # Normalize data types before binding
-    # First, extract all records into a flat list
-    all_records <- unlist(lapply(out, function(x) x$records), recursive = FALSE)
+    out <- dplyr::bind_rows(out)
+    result_df <- cbind(id = out$id, out$fields, createdTime = out$createdTime, stringsAsFactors = FALSE)
     
-    # Process fields to ensure consistent types
-    for (i in seq_along(all_records)) {
-      for (field_name in names(all_records[[i]]$fields)) {
-        # Handle date fields specifically (they can be lists or characters)
-        if (grepl("Date", field_name, ignore.case = TRUE)) {
-          if (is.list(all_records[[i]]$fields[[field_name]])) {
-            # If it's a list, convert to character
-            all_records[[i]]$fields[[field_name]] <- as.character(unlist(all_records[[i]]$fields[[field_name]]))
+    # Flatten list columns
+    for (col in names(result_df)) {
+      if (any(sapply(result_df[[col]], is.list))) {
+        result_df[[col]] <- sapply(result_df[[col]], function(x) {
+          if (is.list(x) && length(x) > 0) {
+            # Filter out NULL elements
+            non_null <- x[!sapply(x, is.null)]
+            if (length(non_null) > 0) {
+              # Convert all elements to character and join with separator
+              return(paste(sapply(non_null, as.character), collapse = separator))
+            }
+          } else if (!is.null(x) && !is.na(x)) {
+            # Handle single values
+            return(as.character(x))
           }
-        }
+          return(NA_character_)
+        })
       }
     }
     
-    # Create a new structure with normalized records
-    normalized_out <- list(records = all_records)
-    
-    # Now bind the rows with normalized data
-    result <- dplyr::bind_rows(normalized_out)
-    cbind(id = result$id, result$fields, createdTime = result$createdTime,
-          stringsAsFactors = FALSE)
+    return(result_df)
   }
 }
