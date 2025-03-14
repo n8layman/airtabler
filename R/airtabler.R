@@ -31,7 +31,7 @@
 #'   or just call primitives \code{\link{air_get}}, \code{\link{air_insert}},
 #'   \code{\link{air_update}} and \code{\link{air_delete}} to access your
 #'   airtable data.
-#' @docType package
+#' 
 #' @name airtabler-package
 #' @aliases airtabler
 NULL

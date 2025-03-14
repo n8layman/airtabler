@@ -14,16 +14,21 @@ pwalk(eha_bases, function(id, name, permissionLevel) {
 
   tryCatch(
     {
-      air_dump_to_csv(base_dump, overwrite = TRUE, output_dir = output_dir)
+      air_dump_to_csv(base_dump, overwrite = FALSE, output_dir = output_dir)
     },
     error = function(e) {
       message("First attempt failed. Trying again with snake_case = FALSE...")
-      air_dump_to_csv(base_dump, overwrite = TRUE, output_dir = output_dir, names_to_snake_case = FALSE)
+      air_dump_to_csv(base_dump, overwrite = FALSE, output_dir = output_dir, names_to_snake_case = FALSE)
     }
   )
 
-  air_dump_to_json(id, base_metadata, overwrite = TRUE, output_dir = output_dir)
+  air_dump_to_json(id, base_metadata, overwrite = FALSE, output_dir = output_dir)
 
-  output_file <- paste0(output_dir, "/", basename(output_dir), ".xlsx")
+  output_file <- paste0(output_dir, "/", basename(output_dir), "_", id, ".xlsx")
   air_dump_to_xlsx(base_dump, output_file = output_file, base_name = name)
 })
+
+
+# 1. First, verify you can fetch a single table directly
+test_table <- airtabler::fetch_all(id[1], "CoV Screening Data")
+print(test_table)
