@@ -3,20 +3,27 @@ library(airtabler)
 library(tidyverse)
 
 # Get list of bases your token has access to
-eha_bases <- air_list_bases()
+eha_bases <- air_list_bases() |> pluck("bases")
 
-# Choose a base e.g., NY city food recommendations
-base <- "appCM0UwGXlCID8Se"
+pwalk(eha_bases, function(id, name, permissionLevel) {
+  print(name)
+  output_dir <- paste0("/Users/nathanlayman/EHA Dropbox/Nathan Layman/airtable_export/", gsub(" ", "_", name))
 
-base_schema <- air_get_schema(base)
+  base_metadata <- air_generate_metadata_from_api(id)
+  base_dump <- air_dump(id, metadata = base_metadata)
 
-table_name <- base_schema$tables$name
+  tryCatch(
+    {
+      air_dump_to_csv(base_dump, overwrite = TRUE, output_dir = output_dir)
+    },
+    error = function(e) {
+      message("First attempt failed. Trying again with snake_case = FALSE...")
+      air_dump_to_csv(base_dump, overwrite = TRUE, output_dir = output_dir, names_to_snake_case = FALSE)
+    }
+  )  
 
-table_json <- air_get_json(base, table_name)
+air_dump_to_json(id, base_metadata, overwrite = TRUE, output_dir = output_dir)
+})
 
-base_dump <- air_dump(base)
-
-base_metadata <- air_generate_metadata_from_api(base)
-air_dump_to_json(base, metadata, overwrite = T)
-
-?air_dump_to_json
+name <- eha_bases[9,]$name
+id <- eha_bases[9,]$id
