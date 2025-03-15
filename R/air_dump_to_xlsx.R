@@ -40,7 +40,6 @@ air_dump_to_xlsx <- function(dump_data,
 
   # Process each table in the dump data
   for (table_name in names(dump_data)) {
-    print(table_name)
     # Skip excluded tables
     if (table_name %in% exclude_tables) {
       next

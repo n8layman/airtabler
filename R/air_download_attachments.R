@@ -1,7 +1,7 @@
 air_download_attachments <- function(x, field, base_path = NULL, attachment_folder = "downloads", 
                                      include_attachment_id = TRUE, table_name = NULL, 
                                      organize_by_table_field = TRUE, use_relative_paths = TRUE,
-                                     remove_original_field = FALSE, verbose = TRUE, ...) {
+                                     remove_original_field = FALSE, verbose = TRUE, overwrite = FALSE, ...) {
   
   if(!is.data.frame(x)){
     rlang::abort("x is not a dataframe")
@@ -85,7 +85,7 @@ air_download_attachments <- function(x, field, base_path = NULL, attachment_fold
     # sometimes the same file is attached multiple times
     # if the file is already downloaded, don't add it again
     
-    if(all(file.exists(dest_full))){
+    if(all(file.exists(dest_full)) && !overwrite){
       if(verbose) {
         not_downloaded_message <- glue::glue("\nFile already exists, not downloaded\n{dest_full}\n.")
         print(not_downloaded_message)

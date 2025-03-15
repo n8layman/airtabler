@@ -48,7 +48,7 @@ fetch_all <- function(base, table_name, ...) {
   if(length(out[[1]]) == 0){
     emptyTableMessage <- glue::glue("The queried view for {table_name} in {base} is empty")
     warning(emptyTableMessage)
-    return(emptyTableMessage)
+    return(NULL)
   } else {
     offset <- airtabler::get_offset(out[[1]])
     while (!is.null(offset)) {

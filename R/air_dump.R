@@ -575,7 +575,7 @@ air_update_description_table <- function(base,description, table_name = "Descrip
 #'
 air_get_metadata_from_table <- function(base, table_name, add_id_field = FALSE, field_names_to_snakecase = TRUE){
   # get structural metadata table
-  str_metadata <- airtabler::fetch_all(base,table_name)
+  str_metadata <- fetch_all(base,table_name)
 
   # get original table names
   str_md_names <- names(str_metadata)
@@ -757,7 +757,7 @@ air_generate_metadata_from_tables <- function(base, table_names,limit=1){
   warning('Deprecated: For more complete results, use air_generate_metadata_from_api.
   Airtable does not return fields with empty values - "", false, or [].')
   meta_data_table <- purrr::map_dfr(table_names,function(x){
-    table_x <- airtabler::air_get(base,x,limit = limit )
+    table_x <- air_get(base,x,limit = limit )
     fields_x <- names(table_x)
 
     ## guess record types?
@@ -792,7 +792,7 @@ air_generate_metadata_from_tables <- function(base, table_names,limit=1){
 #' }
 air_get_base_description_from_table<- function(base, table_name,field_names_to_snakecase = TRUE){
   #fetch table
-  desc_table <- airtabler::fetch_all(base,table_name)
+  desc_table <- fetch_all(base,table_name)
   # to snake case
   if(field_names_to_snakecase){
     names(desc_table) <- snakecase::to_snake_case(names(desc_table))
@@ -960,7 +960,8 @@ air_dump <- function(base, metadata = NULL, description = NULL,
     purrr::map(function(table_name) {
       
       # Fetch all records from the current table
-      current_table <- airtabler::fetch_all(base, table_name)
+      current_table <- fetch_all(base, table_name)
+      if(is.null(current_table)) return(NULL)
 
       # Get expected field names for this table from metadata
       expected_fields <- metadata[metadata$table_name == table_name, "field_name"]
@@ -1058,10 +1059,10 @@ air_dump <- function(base, metadata = NULL, description = NULL,
             return(current_table)
           }
         }
-        
+
         # Configure download delay for polite API usage
         download_delay <- 0
-        if(polite_downloads){
+        if(polite_downloads) {
           download_delay <- 0.01  # 10ms delay between downloads
         }
         

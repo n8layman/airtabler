@@ -29,7 +29,7 @@
 #' @export
 process_table_for_excel <- function(
     table_data,
-    concat_sep = ",") {
+    concat_sep = ", ") {
 
   # If empty dataframe, return as is
   if (nrow(table_data) == 0) {
@@ -54,15 +54,34 @@ process_table_for_excel <- function(
   table_data <- table_data |>
     mutate(across(all_of(list_cols), ~ paste(unlist(.x), collapse = concat_sep)))
 
+  # Check for and warn about long text fields
   max_char_lengths <- sapply(table_data, function(col) {
-  if(is.character(col)) {
-    max(nchar(col, type = "chars"), na.rm = TRUE)
-  } else {
-    max(nchar(as.character(col), type = "chars"), na.rm = TRUE)
-  }
-})
+    if(is.character(col)) {
+      # Handle case where column contains only NA values
+      if(all(is.na(col))) {
+        return(0)  # Return 0 instead of -Inf
+      }
+      return(max(nchar(col, type = "chars"), na.rm = TRUE))
+    } else {
+      # Handle case where all values convert to NA
+      col_char <- as.character(col)
+      if(all(is.na(col_char))) {
+        return(0)  # Return 0 instead of -Inf
+      }
+      return(max(nchar(col_char, type = "chars"), na.rm = TRUE))
+    }
+  })
 
-print(max_char_lengths)
+  if(any(max_char_lengths > 30000)) {
+    long_cols <- max_char_lengths[max_char_lengths > 30000]
+    print(long_cols)
+    warning(glue::glue("Cell size > 30,000 detected! Trimming for compatibility with excel"))
+    
+    # Add stringr-based cutting for all columns exceeding the limit
+    for(col_name in names(long_cols)) {
+      table_data[[col_name]] <- stringr::str_sub(table_data[[col_name]], 1, 30000)
+    }
+  }
 
   return(table_data)
 }
