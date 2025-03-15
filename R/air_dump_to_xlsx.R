@@ -22,6 +22,7 @@ air_dump_to_xlsx <- function(dump_data,
                              preserve_ids = TRUE,
                              clean_attachment_cols = TRUE,
                              exclude_tables = c()) {
+
   # Check if openxlsx is installed
   if (!requireNamespace("openxlsx", quietly = TRUE)) {
     stop("Package 'openxlsx' is needed for this function to work. Please install it.")
@@ -39,6 +40,7 @@ air_dump_to_xlsx <- function(dump_data,
 
   # Process each table in the dump data
   for (table_name in names(dump_data)) {
+    print(table_name)
     # Skip excluded tables
     if (table_name %in% exclude_tables) {
       next
@@ -51,13 +53,12 @@ air_dump_to_xlsx <- function(dump_data,
     }
 
     # Clone the dataframe to avoid modifying the original
+    # Format the data for export
     table_data <- dump_data[[table_name]]
+    table_data <- process_table_for_excel(table_data)
 
     # Clean sheet name for Excel (max 31 chars, no special chars)
-    sheet_name <- substr(gsub("[^a-zA-Z0-9_]", "_", table_name), 1, 31)
-
-    # Handle column types and format for Airtable import
-    table_data <- process_table_for_excel(table_data, preserve_ids, clean_attachment_cols)
+    sheet_name <- substr(stringr::str_squish(table_name), 1, 35)
 
     # Create worksheet and write data
     tryCatch(
