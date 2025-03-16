@@ -1,8 +1,8 @@
-# airtabler Documentation
+# airtabler
 
 ## Overview
 
-The `airtabler` package provides tools for interacting with Airtable bases through the Airtable API. This package allows you to list bases, export data, and save exports in various formats including Excel workbooks, which can later be re-imported into Airtable.
+The `airtabler` package provides comprehensive tools for interacting with Airtable bases through the Airtable API. With this package, you can list bases, export data, and save exports in various formats including Excel workbooks, CSV files, and R data objects, which can be easily re-imported into Airtable or used for further analysis.
 
 ## Installation
 
@@ -17,14 +17,25 @@ library(tidyverse)
 
 ## Authentication
 
-Before using the package, you'll need to set up your Airtable API token. The token can be set using:
+Before using the package, you need to set up your Airtable API token:
 
 ```r
 # Set your Airtable API token (recommended to use .Renviron)
 Sys.setenv(AIRTABLE_API_KEY="your_api_token")
 ```
 
-For security, it's recommended to store your API token in your `.Renviron` file rather than hardcoding it in scripts.
+For security, it's recommended to store your API token in your `.Renviron` file:
+
+```
+# In your .Renviron file
+AIRTABLE_API_KEY=your_api_token
+```
+
+You can edit your `.Renviron` file with:
+
+```r
+usethis::edit_r_environ()
+```
 
 ## Basic Usage
 
@@ -61,9 +72,9 @@ base_dump <- air_dump(
 )
 ```
 
-### Exporting to Excel
+### Export Format Options
 
-You can export the base data to Excel format:
+#### To Excel Workbook
 
 ```r
 # Export to Excel workbook
@@ -74,42 +85,101 @@ air_dump_to_xlsx(
 )
 ```
 
+#### To CSV Files
+
+```r
+# Export to CSV files (one file per table)
+air_dump_to_csv(
+  base_dump,
+  output_dir = "path/to/output/directory",
+  attachments_dir = NULL,
+  overwrite = TRUE,
+  output_id = "my_base_csvs",
+  names_to_snake_case = TRUE
+)
+```
+
+#### To R Object
+
+```r
+# Save as R object for easier importing later
+saveRDS(base_dump, file = "path/to/output.rds")
+```
+
 ## Batch Processing Example
 
 The following example demonstrates how to process and export multiple Airtable bases:
 
 ```r
 # Get list of bases your token has access to
-eha_bases <- air_list_bases() |> pluck("bases")
+bases <- air_list_bases() |> pluck("bases")
+
+# Create a base directory for all exports
+base_export_dir <- "path/to/export/directory"
+dir.create(base_export_dir, showWarnings = FALSE, recursive = TRUE)
 
 # Process each base
-pwalk(eha_bases, function(id, name, permissionLevel) {
+pwalk(bases, function(id, name, permissionLevel) {
   # Display the current base name
-  print(stringr::str_squish(name))
+  message("Processing: ", stringr::str_squish(name))
+
+  # Create cleaned base name for filenames and directories
+  cleaned_base_name <- gsub(" ", "_", stringr::str_squish(name))
 
   # Create output directory
-  output_dir <- paste0("/path/to/export/directory/",
-                      gsub(" ", "_", stringr::str_squish(name)))
+  output_dir <- file.path(base_export_dir, paste0(cleaned_base_name, "_", id))
+  dir.create(output_dir, showWarnings = FALSE, recursive = TRUE)
 
-  # Generate metadata and export data
-  base_metadata <- air_generate_metadata_from_api(id)
-  base_dump <- air_dump(id,
-                        metadata = base_metadata,
-                        base_path = output_dir,
-                        attachment_folder = "attachments",
-                        overwrite = FALSE,
-                        remove_original_field = TRUE,
-                        organize_by_table_field = TRUE)
+  # Try to process the base, with error handling
+  tryCatch({
+    # Generate metadata and export data
+    base_metadata <- air_generate_metadata_from_api(id)
+    base_dump <- air_dump(
+      id,
+      metadata = base_metadata,
+      base_path = output_dir,
+      attachment_folder = "attachments",
+      overwrite = FALSE,
+      remove_original_field = TRUE,
+      organize_by_table_field = TRUE
+    )
 
-  # Export to Excel
-  output_file <- paste0(output_dir, "/", basename(output_dir), "_", id, ".xlsx")
-  air_dump_to_xlsx(base_dump, output_file = output_file, base_name = name)
+    # Base output file path
+    output_file <- file.path(output_dir, cleaned_base_name)
+
+    # Export to different formats
+    # 1. Excel (has ~30,000 character limit per cell)
+    air_dump_to_xlsx(
+      base_dump,
+      output_file = paste0(output_file, ".xlsx"),
+      base_name = name
+    )
+
+    # 2. R object (preserves all data without truncation)
+    saveRDS(base_dump, file = paste0(output_file, ".rds"))
+
+    # 3. CSV files (one per table)
+    air_dump_to_csv(
+      base_dump,
+      output_dir = output_dir,
+      attachments_dir = NULL,
+      overwrite = TRUE,
+      output_id = paste0(cleaned_base_name, "_csv_files"),
+      names_to_snake_case = TRUE
+    )
+
+    message("Successfully exported base: ", name)
+  }, error = function(e) {
+    message("Error processing base '", name, "' (ID: ", id, "): ", e$message)
+  })
 })
 ```
 
 ## Re-importing to Airtable
 
-The Excel files generated by `air_dump_to_xlsx()` are formatted for easy re-import into Airtable. To import:
+The files generated by export functions are formatted for easy re-import into Airtable:
+
+### From Excel
 
 1. Open your Airtable base in a web browser
 2. Select the table where you want to import data
@@ -119,12 +189,20 @@ The Excel files generated by `air_dump_to_xlsx()` are formatted for easy re-impo
 6. Follow the Airtable import wizard to map fields
 7. Confirm and complete the import
 
-Notes on re-importing:
+### From CSV
 
-- The Excel workbook contains separate sheets for each table in the base
-- Linked records may need to be re-established during import
-- Attachments are not included in the Excel file but are stored in the attachment folder
-- For large bases, consider importing one table at a time
+Similar to Excel, but import each table's CSV file separately.
+
+### From R
+
+To re-use the R object in another R session:
+
+```r
+# Load saved base dump
+base_dump <- readRDS("path/to/file.rds")
+
+# Now you can work with the data or export it again
+```
 
 ## Function Reference
 
@@ -138,7 +216,7 @@ Generates metadata for a specific base, which is required for export operations.
 
 ### `air_dump(base_id, metadata, ...)`
 
-Exports all data from a base to an R object (not CSV files).
+Exports all data from a base to an R object.
 
 Parameters:
 
@@ -150,17 +228,22 @@ Parameters:
 - `remove_original_field`: Remove original field IDs after export
 - `organize_by_table_field`: Organize exported files by table and field
 
-This function returns an R object containing all the table data from the Airtable base. The data is stored in memory and can be further processed before writing to disk.
-
 ### `air_dump_to_xlsx(base_dump, output_file, base_name)`
 
 Converts a base dump to an Excel workbook.
 
+### `air_dump_to_csv(base_dump, output_dir, ...)`
+
+Exports a base dump to a series of CSV files (one per table).
+
 Parameters:
 
 - `base_dump`: The output from `air_dump()`
-- `output_file`: Path to save the Excel file
-- `base_name`: Name to use in the workbook metadata
+- `output_dir`: Directory to save CSV files
+- `attachments_dir`: Optional directory for attachments
+- `overwrite`: Whether to overwrite existing files
+- `output_id`: Prefix for CSV filenames
+- `names_to_snake_case`: Convert column names to snake_case
 
 ## Error Handling
 
@@ -171,10 +254,22 @@ Most functions will return errors with informative messages if:
 - A base ID doesn't exist
 - There are connection issues with the Airtable API
 
+## Handling Large Bases
+
+For bases with large amounts of data:
+
+- Excel has a cell character limit (~30,000), which may truncate large text fields
+- Use the RDS format to preserve all data without truncation
+- For very large bases, process tables individually
+
 ## Dependencies
 
-- tidyverse
+- tidyverse (dplyr, purrr, stringr, etc.)
 - httr
 - jsonlite
 - openxlsx
 - fs
+
+## Contributing
+
+Contributions to improve `airtabler` are welcome. Please submit issues and pull requests on GitHub.
