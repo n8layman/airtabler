@@ -57,7 +57,7 @@ air_dump_to_xlsx <- function(dump_data,
     table_data <- process_table_for_excel(table_data)
 
     # Clean sheet name for Excel (max 31 chars, no special chars)
-    sheet_name <- substr(stringr::str_squish(table_name), 1, 35)
+    sheet_name <- substr(stringr::str_squish(table_name), 1, 30)
 
     # Create worksheet and write data
     tryCatch(

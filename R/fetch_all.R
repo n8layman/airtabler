@@ -56,25 +56,11 @@ fetch_all <- function(base, table_name, ...) {
       offset <- airtabler::get_offset(out[[length(out)]])
     }
 
-      # Identify types of all columns in out
-types <- map_dfr(out, ~tibble(
-  column = names(.x),
-  type = map_chr(.x, ~class(.)[1])
-), .id = "data_frame") |>
-  pivot_wider(
-    id_cols = data_frame,
-    names_from = column,
-    values_from = type
-  )
-
-# Identify columns where at least one member of out is a list element
-list_cols <- names(types)[-1][map_lgl(types[-1], ~any(. == "list", na.rm = TRUE))]
-
-# Standardize to list before row bind
-out <- map(out, ~ .x |> mutate(across(any_of(list_cols), ~ if_else(map_lgl(.x, is.list), .x, map(.x, list)))))
-
+    out_col_names <- purrr::reduce(out, ~union(.x, names(.y)), .init = character(0))
+    out <- purrr::reduce(out_col_names, ~standardize_list_columns(.x, .y), .init = out)
     out <- dplyr::bind_rows(out)
-    cbind(id = out$id, out$fields, createdTime = out$createdTime,
+
+    cbind(id = out$id, out$fields |> bind_rows(), createdTime = out$createdTime,
           stringsAsFactors = FALSE)
   }
 }
