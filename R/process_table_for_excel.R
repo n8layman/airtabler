@@ -74,6 +74,7 @@ process_table_for_excel <- function(
 
   if(any(max_char_lengths > 30000)) {
     long_cols <- max_char_lengths[max_char_lengths > 30000]
+    print(glue::glue("Cell size > 30,000 detected! Trimming for compatibility with excel"))
     print(long_cols)
     warning(glue::glue("Cell size > 30,000 detected! Trimming for compatibility with excel"))
     

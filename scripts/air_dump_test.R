@@ -10,22 +10,28 @@ id <- eha_bases[75,]$id
 pwalk(eha_bases, function(id, name, permissionLevel) {
   print(stringr::str_squish(name))
   cleaned_base_name <- gsub(" ", "_", stringr::str_squish(name))
-  output_dir <- paste0("/Users/nathanlayman/EHA Dropbox/Nathan Layman/airtable_export/", cleaned_base_name)
+  output_dir <- paste0("/Users/nathanlayman/EHA Dropbox/Nathan Layman/airtable_export/", cleaned_base_name, "_", id)
 
   base_metadata <- air_generate_metadata_from_api(id)
   base_dump <- air_dump(id,
                         metadata = base_metadata,
                         base_path = output_dir,
                         attachment_folder = "attachments",
-                        overwrite = FALSE,
-                        remove_original_field = TRUE,
-                        organize_by_table_field = TRUE)
+                        overwrite = FALSE, # Whether to overwrite attachment files or not
+                        remove_original_field = TRUE, # Re-write attachment column as relative file location and clean up raw column
+                        organize_by_table_field = TRUE) # All attachments saved in one folder or nested by table and field
 
-  output_file <- paste0(output_dir, "/", basename(output_dir))
+  output_file <- paste0(output_dir, "/", cleaned_base_name)
   
+  # Save dump as an .xlsx file
+  # Note: excel has a ~30,000 character limit per cell which can crop things like sequence data
+  # The next two options are better for large data
   air_dump_to_xlsx(base_dump, output_file = paste0(output_file, ".xlsx"), base_name = name)
+
+  # Save dump as an R object for easier import
   saveRDS(base_dump, file = paste0(output_file, ".rds"))
 
+  # Save dump as a series of flat csv files in a nested folder
   air_dump_to_csv(
   base_dump,
   output_dir = output_dir,

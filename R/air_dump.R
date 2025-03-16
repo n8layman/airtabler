@@ -1238,6 +1238,12 @@ air_dump_to_csv <- function(table_list, output_dir = "outputs",
   # Process each table
   file_paths <- purrr::map2_chr(table_list, names(table_list), function(x_table, y_table_name) {
     
+    # MINIMAL FIX: Skip if x_table is NULL or names(x_table) is NULL
+if (is.null(x_table) || is.null(names(x_table)) || !is.data.frame(x_table)) {
+  message(paste("Skipping", y_table_name, "- not a valid data frame or missing column names"))
+  return(NA_character_)
+}
+
     if (names_to_snake_case) {
       ##  clean table name
       y_table_name_snake <- snakecase::to_snake_case(y_table_name)
