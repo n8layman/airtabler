@@ -1239,10 +1239,10 @@ air_dump_to_csv <- function(table_list, output_dir = "outputs",
   file_paths <- purrr::map2_chr(table_list, names(table_list), function(x_table, y_table_name) {
     
     # MINIMAL FIX: Skip if x_table is NULL or names(x_table) is NULL
-if (is.null(x_table) || is.null(names(x_table)) || !is.data.frame(x_table)) {
-  message(paste("Skipping", y_table_name, "- not a valid data frame or missing column names"))
-  return(NA_character_)
-}
+    if (is.null(x_table) || is.null(names(x_table)) || !is.data.frame(x_table)) {
+      message(paste("Skipping", y_table_name, "- not a valid data frame or missing column names"))
+      return(NA_character_)
+    }
 
     if (names_to_snake_case) {
       ##  clean table name
@@ -1254,11 +1254,15 @@ if (is.null(x_table) || is.null(names(x_table)) || !is.data.frame(x_table)) {
       dup_check <- duplicated(x_names_snake)
       
       if (any(dup_check)) {
-        err_msg <- glue::glue("The following field names in table {y_table_name} are duplicated after converting to snake_case:
+        warn_msg <- glue::glue("The following field names in table {y_table_name} are duplicated after converting to snake_case:
                              \n
                              {paste(names(x_table)[which(dup_check)], collapse = ', ')}\n
-                             Fix field names in airtable or set `names_to_snake_case` to FALSE")
-        rlang::abort(err_msg)
+                             attempting to fix automatically")
+        print(warn_msg)
+        warning(err_msg)
+        
+        # Use make.unique to create unique names while preserving the original names where possible
+        x_names_snake <- make.unique(x_names_snake, sep = ".")
       }
       
       y_table_name <- y_table_name_snake

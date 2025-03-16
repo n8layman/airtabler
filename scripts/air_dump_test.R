@@ -4,8 +4,8 @@ library(tidyverse)
 
 # Get list of bases your token has access to
 eha_bases <- air_list_bases() |> pluck("bases")
-name <- eha_bases[75,]$name
-id <- eha_bases[75,]$id
+name <- eha_bases[16,]$name
+id <- eha_bases[16,]$id
 
 pwalk(eha_bases, function(id, name, permissionLevel) {
   print(stringr::str_squish(name))
@@ -32,13 +32,11 @@ pwalk(eha_bases, function(id, name, permissionLevel) {
   saveRDS(base_dump, file = paste0(output_file, ".rds"))
 
   # Save dump as a series of flat csv files in a nested folder
-  air_dump_to_csv(
-  base_dump,
-  output_dir = output_dir,
-  attachments_dir = NULL,
-  overwrite = TRUE,
-  output_id = paste(cleaned_base_name, "csv_files", sep = "_"),
-  names_to_snake_case = TRUE
-)
+  air_dump_to_csv(base_dump,
+                  output_dir = output_dir,
+                  attachments_dir = NULL,
+                  overwrite = TRUE,
+                  output_id = paste(cleaned_base_name, "csv_files", sep = "_"),
+                  names_to_snake_case = TRUE)
 
 })
