@@ -1259,7 +1259,7 @@ air_dump_to_csv <- function(table_list, output_dir = "outputs",
                              {paste(names(x_table)[which(dup_check)], collapse = ', ')}\n
                              attempting to fix automatically")
         print(warn_msg)
-        warning(err_msg)
+        warning(warn_msg)
         
         # Use make.unique to create unique names while preserving the original names where possible
         x_names_snake <- make.unique(x_names_snake, sep = ".")
