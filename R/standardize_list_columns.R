@@ -32,6 +32,7 @@
 #' }
 #' 
 standardize_list_columns <- function(df_list, column) {
+
   # Check column types across all dataframes
   types <- purrr::map_chr(df_list, function(df) {
     if(nrow(df) > 0 && ncol(df) > 0 && column %in% names(df)) {
@@ -50,12 +51,11 @@ standardize_list_columns <- function(df_list, column) {
       ~(column %in% names(.x) && inherits(.x[[column]], "data.frame")), 
       ~.x[[column]]
     )
-    nested_dfs <- purrr::compact(nested_dfs)  # Remove NULL elements
     
-      # If there are no nested dataframes, just return early
-  if(length(nested_dfs) == 0) {
-    return(df_list)
-  }
+    # If there are no nested dataframes, just return early
+    if(length(nested_dfs) == 0) {
+      return(df_list)
+    }
   
     # 2. Get all unique column names across all nested dataframes
     nested_cols <- purrr::map(nested_dfs, names) |>
@@ -69,6 +69,7 @@ standardize_list_columns <- function(df_list, column) {
     # 4. Map standardized nested dataframes back to original positions
     df_list <- purrr::map(df_list, function(df) {
       if(column %in% names(df) && inherits(df[[column]], "data.frame")) {
+
         # Find the index of this nested df in our processed list
         idx <- which(purrr::map_lgl(df_list, 
                                    ~(column %in% names(.x) && 

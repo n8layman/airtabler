@@ -4,8 +4,8 @@ library(tidyverse)
 
 # Get list of bases your token has access to
 eha_bases <- air_list_bases() |> pluck("bases")
-name <- eha_bases[16,]$name
-id <- eha_bases[16,]$id
+name <- eha_bases[71,]$name
+id <- eha_bases[71,]$id
 
 pwalk(eha_bases, function(id, name, permissionLevel) {
   print(stringr::str_squish(name))
@@ -40,3 +40,9 @@ pwalk(eha_bases, function(id, name, permissionLevel) {
                   names_to_snake_case = TRUE)
 
 })
+
+
+# # Render a plain Markdown file to PDF
+# rmarkdown::render("your_document.md", 
+#                   output_format = "pdf_document",
+#                   output_file = "your_document.pdf")

@@ -309,7 +309,7 @@ air_update_metadata_table <- function(base,meta_data,table_name = "Meta Data", j
 
   # pull down current meta data table
 
-  current_metadata_table <- fetch_all(base,table_name)
+  current_metadata_table <- fetch_all(base, table_name)
 
   #create any new fields from meta_data
 
@@ -493,7 +493,7 @@ air_update_description_table <- function(base,description, table_name = "Descrip
 
   # pull down current table
 
-  current_metadata_table <- fetch_all(base,table_name)
+  current_metadata_table <- fetch_all(base, table_name)
   # convert to tibble for more consistent behavior in joins
   current_metadata_table<- tibble::as_tibble(current_metadata_table)
   current_metadata_table <- current_metadata_table |>
@@ -575,7 +575,7 @@ air_update_description_table <- function(base,description, table_name = "Descrip
 #'
 air_get_metadata_from_table <- function(base, table_name, add_id_field = FALSE, field_names_to_snakecase = TRUE){
   # get structural metadata table
-  str_metadata <- fetch_all(base,table_name)
+  str_metadata <- fetch_all(base, table_name)
 
   # get original table names
   str_md_names <- names(str_metadata)
@@ -792,7 +792,7 @@ air_generate_metadata_from_tables <- function(base, table_names,limit=1){
 #' }
 air_get_base_description_from_table<- function(base, table_name,field_names_to_snakecase = TRUE){
   #fetch table
-  desc_table <- fetch_all(base,table_name)
+  desc_table <- fetch_all(base, table_name)
   # to snake case
   if(field_names_to_snakecase){
     names(desc_table) <- snakecase::to_snake_case(names(desc_table))
