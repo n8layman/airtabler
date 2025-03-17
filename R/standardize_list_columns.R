@@ -42,7 +42,9 @@ standardize_list_columns <- function(df_list, column) {
   })
   
   # Check for data.frame type columns
-  if(any(types == "data.frame", na.rm = TRUE)) {
+  if(all(types == "data.frame", na.rm = TRUE)) {
+
+
     message(glue::glue("{column} detected as data.frame, recursively standardizing columns."))
     
     # 1. Extract all nested dataframes for this column
