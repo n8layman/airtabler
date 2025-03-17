@@ -51,6 +51,7 @@ standardize_list_columns <- function(df_list, column) {
       ~(column %in% names(.x) && inherits(.x[[column]], "data.frame")), 
       ~.x[[column]]
     )
+    # nested_dfs <- purrr::compact(nested_dfs)  # Remove NULL elements
     
     # If there are no nested dataframes, just return early
     if(length(nested_dfs) == 0) {
