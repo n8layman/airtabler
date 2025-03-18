@@ -1,8 +1,17 @@
+---
+output:
+  pdf_document:
+    latex_engine: lualatex
+mainfont: NotoSans
+mainfontfallback:
+  - "Apple Color Emoji:mode=harf"
+---
+
 # airtabler
 
 ## Overview
 
-The `airtabler` package provides comprehensive tools for interacting with Airtable bases through the Airtable API. With this package, you can list bases, export data, and save exports in various formats including Excel workbooks, CSV files, and R data objects, which can be easily re-imported into Airtable or used for further analysis.
+The [`airtabler`](https://ecohealthalliance-org.zoom.us/my/nlayman) package provides comprehensive tools for interacting with Airtable bases through the Airtable API. With this package, you can list bases, export data, and save exports in various formats including Excel workbooks, CSV files, and R data objects, which can be easily re-imported into Airtable or used for further analysis.
 
 ## Installation
 
