@@ -31,7 +31,10 @@ air_dump_to_xlsx <- function(dump_data,
   # Set output file path if not provided
   if (is.null(output_file)) {
     # Clean base_name for file system
-    clean_base_name <- gsub("[^a-zA-Z0-9_-]", "_", base_name)
+    clean_base_name <- gsub("[^a-zA-Z0-9_-]", "_", base_name) |> 
+    stringr::str_replace_all("_+", "_") |>
+    stringr::str_squish()
+
     output_file <- paste0(clean_base_name, "_", format(Sys.Date(), "%Y%m%d"), ".xlsx")
   }
 
@@ -57,7 +60,10 @@ air_dump_to_xlsx <- function(dump_data,
     table_data <- process_table_for_excel(table_data)
 
     # Clean sheet name for Excel (max 31 chars, no special chars)
-    sheet_name <- substr(stringr::str_squish(table_name), 1, 30)
+    sheet_name <- gsub("[^a-zA-Z0-9_-]", "_", table_name) |> 
+    stringr::str_replace_all("_+", "_") |>
+    stringr::str_squish() |>
+    substr(stringr::str_squish(table_name), 1, 30)
 
     # Create worksheet and write data
     tryCatch(
