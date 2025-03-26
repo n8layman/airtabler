@@ -5,7 +5,7 @@
 #'
 #' @author Nathan C. Layman
 #'
-#' @param dump_data List. Output from air_dump() containing dataframes for each table
+#' @param base_dump List. Output from air_dump() containing dataframes for each table
 #' @param output_file String. Path to the output Excel file. If NULL, uses the base_name
 #' @param base_name String. Name of the Airtable base, used in the filename if output_file is NULL
 #' @param preserve_ids Logical. Whether to include ID columns to maintain relationships
@@ -16,7 +16,7 @@
 #' @export
 #'
 #' @importFrom openxlsx createWorkbook addWorksheet writeData saveWorkbook
-air_dump_to_xlsx <- function(dump_data,
+air_dump_to_xlsx <- function(base_dump,
                              output_file = NULL,
                              base_name = "airtable_base",
                              preserve_ids = TRUE,
@@ -34,7 +34,6 @@ air_dump_to_xlsx <- function(dump_data,
     clean_base_name <- gsub("[^a-zA-Z0-9_-]", "_", base_name) |> 
     stringr::str_replace_all("_+", "_") |>
     stringr::str_squish()
-
     output_file <- paste0(clean_base_name, "_", format(Sys.Date(), "%Y%m%d"), ".xlsx")
   }
 
@@ -42,28 +41,27 @@ air_dump_to_xlsx <- function(dump_data,
   wb <- openxlsx::createWorkbook()
 
   # Process each table in the dump data
-  for (table_name in names(dump_data)) {
+  for (table_name in names(base_dump)) {
     # Skip excluded tables
     if (table_name %in% exclude_tables) {
       next
     }
 
     # Skip if not a dataframe (might be metadata information)
-    if (!is.data.frame(dump_data[[table_name]])) {
+    if (!is.data.frame(base_dump[[table_name]])) {
       message(paste("Skipping", table_name, "- not a dataframe"))
       next
     }
 
     # Clone the dataframe to avoid modifying the original
     # Format the data for export
-    table_data <- dump_data[[table_name]]
-    table_data <- process_table_for_excel(table_data)
+    table_data <- process_table_for_excel(base_dump[[table_name]])
 
     # Clean sheet name for Excel (max 31 chars, no special chars)
-    sheet_name <- gsub("[^a-zA-Z0-9_-]", "_", table_name) |> 
+    sheet_name <- gsub("[^a-zA-Z0-9_-]", "_", table_name) |>
     stringr::str_replace_all("_+", "_") |>
     stringr::str_squish() |>
-    substr(stringr::str_squish(table_name), 1, 30)
+    stringr::str_trunc(30)
 
     # Create worksheet and write data
     tryCatch(

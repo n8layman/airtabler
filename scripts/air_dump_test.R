@@ -4,8 +4,8 @@ library(tidyverse)
 
 # Get list of bases your token has access to
 eha_bases <- air_list_bases() |> pluck("bases")
-name <- eha_bases[85,]$name
-id <- eha_bases[85,]$id
+name <- eha_bases[35,]$name
+id <- eha_bases[35,]$id
 
 pwalk(eha_bases, function(id, name, permissionLevel) {
   print(stringr::str_squish(name))

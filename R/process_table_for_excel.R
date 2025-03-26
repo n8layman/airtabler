@@ -52,6 +52,7 @@ process_table_for_excel <- function(
   
   # Concatenate list columns
   table_data <- table_data |>
+    rowwise() |>
     mutate(across(all_of(list_cols), ~ paste(unlist(.x), collapse = concat_sep)))
 
   # Check for and warn about long text fields
