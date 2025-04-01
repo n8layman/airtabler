@@ -7,10 +7,12 @@ eha_bases <- air_list_bases() |> pluck("bases")
 name <- eha_bases[35,]$name
 id <- eha_bases[35,]$id
 
+base_output_dir <- "/Users/nathanlayman/EHA Dropbox/Nathan Layman/airtable_export/bases/"
+
 pwalk(eha_bases, function(id, name, permissionLevel) {
   print(stringr::str_squish(name))
   cleaned_base_name <- gsub(" ", "_", stringr::str_squish(name))
-  output_dir <- paste0("/Users/nathanlayman/EHA Dropbox/Nathan Layman/airtable_export/", cleaned_base_name, "_", id)
+  output_dir <- paste0(base_output_dir, cleaned_base_name, "_", id)
 
   base_metadata <- air_generate_metadata_from_api(id)
   base_dump <- air_dump(id,
